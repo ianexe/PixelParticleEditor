@@ -31,6 +31,7 @@ public class PixelParticleEditor_UI : EditorWindow
 
     Camera camera;
     RenderTexture renderTexture;
+    RenderTexture renderTexture2;
 
     Texture2D texture_test;
     float slider_test = 0.0f;
@@ -52,8 +53,13 @@ public class PixelParticleEditor_UI : EditorWindow
 
     public void Awake()
     {
-        renderTexture = new RenderTexture((int)position.width,
-            (int)position.height,
+        renderTexture = new RenderTexture((int)50,
+            (int)50,
+            (int)RenderTextureFormat.ARGB32);
+        renderTexture.filterMode = FilterMode.Point;
+
+        renderTexture2 = new RenderTexture((int)350,
+            (int)350,
             (int)RenderTextureFormat.ARGB32);
     }
 
@@ -68,13 +74,17 @@ public class PixelParticleEditor_UI : EditorWindow
         {
             camera.targetTexture = renderTexture;
             camera.Render();
+            camera.targetTexture = renderTexture2;
+            camera.Render();
             camera.targetTexture = null;
         }
+        /*
         if (renderTexture.width != position.width ||
             renderTexture.height != position.height)
             renderTexture = new RenderTexture((int)position.width,
                 (int)position.height,
                 (int)RenderTextureFormat.ARGB32);
+                */
     }
 
     private void OnGUI()
@@ -92,12 +102,12 @@ public class PixelParticleEditor_UI : EditorWindow
             EditorGUILayout.BeginHorizontal();
 
                 scroll_camera1 = EditorGUILayout.BeginScrollView(scroll_camera1, GUILayout.Width(350), GUILayout.Height(350));
-        GUI.DrawTexture(new Rect(0.0f, 0.0f, position.width, position.height), renderTexture);
+        GUI.DrawTexture(new Rect(0.0f, 0.0f, 350, 350), renderTexture2);
 
         EditorGUILayout.EndScrollView();
 
                 scroll_camera2 = EditorGUILayout.BeginScrollView(scroll_camera2, GUILayout.Width(350), GUILayout.Height(350));
-        GUI.DrawTexture(new Rect(0.0f, 0.0f, position.width, position.height), renderTexture);
+        GUI.DrawTexture(new Rect(0.0f, 0.0f, 350, 350), renderTexture);
         EditorGUILayout.EndScrollView();
 
                 scroll_options = EditorGUILayout.BeginScrollView(scroll_options, GUILayout.Width(100), GUILayout.Height(350));
@@ -283,7 +293,7 @@ public class PixelParticleEditor_UI : EditorWindow
 
     Texture2D CreateTexture2D(RenderTexture rTex)
     {
-        Texture2D tex = new Texture2D(1920, 1080, TextureFormat.RGB24, false);
+        Texture2D tex = new Texture2D(renderTexture.height, renderTexture.width, TextureFormat.ARGB32, false);
         RenderTexture.active = rTex;
         tex.ReadPixels(new Rect(0, 0, rTex.width, rTex.height), 0, 0);
         tex.Apply();
