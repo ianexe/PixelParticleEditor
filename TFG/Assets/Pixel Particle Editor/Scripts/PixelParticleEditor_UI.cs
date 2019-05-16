@@ -1,5 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
+using System.Collections;
+using System.Collections.Generic;
 
 public enum OPTIONS
 {
@@ -29,7 +31,10 @@ public class PixelParticleEditor_UI : EditorWindow
     bool layer1;
     bool layer2;
 
-    Camera camera;
+    public Camera camera;
+    public ParticleSystem particle_prefab;
+    List<ParticleSystem> particles;
+
     RenderTexture renderTexture;
     RenderTexture renderTexture2;
 
@@ -53,19 +58,37 @@ public class PixelParticleEditor_UI : EditorWindow
 
     public void Awake()
     {
-        renderTexture = new RenderTexture((int)50,
-            (int)50,
+        //Pixel Render Texture
+        renderTexture = new RenderTexture((int)100,
+            (int)100,
             (int)RenderTextureFormat.ARGB32);
         renderTexture.filterMode = FilterMode.Point;
 
+        //HD Render Texture
         renderTexture2 = new RenderTexture((int)350,
             (int)350,
             (int)RenderTextureFormat.ARGB32);
+
+        //Particle Init
+        ParticleSystem particle_to_instantiate = Instantiate(particle_prefab, new Vector3(-10000, -10, 10), Quaternion.identity);
+        particles = new List<ParticleSystem>();
+        particles.Add(particle_to_instantiate);
+
+        //Camera Init
+        camera = Instantiate(camera, new Vector3(-10000,0,0), Quaternion.identity);
     }
 
     public void OnEnable()
     {
-        camera = Camera.main;
+        Selection.activeObject = particles[0].gameObject;
+    }
+
+    public void OnDestroy()
+    {
+        DestroyImmediate(particles[0].gameObject);
+        particles.Clear();
+        
+        DestroyImmediate(camera.gameObject);
     }
 
     public void Update()
@@ -93,29 +116,34 @@ public class PixelParticleEditor_UI : EditorWindow
 
         EditorGUILayout.BeginHorizontal();
 
+        //Palette Column
         scroll_palette = EditorGUILayout.BeginScrollView(scroll_palette, GUILayout.Width(175), GUILayout.Height(500));
         DrawPaletteColumn();
         EditorGUILayout.EndScrollView();
+
 
         EditorGUILayout.BeginVertical();
 
             EditorGUILayout.BeginHorizontal();
 
+                //Particle HD Render
                 scroll_camera1 = EditorGUILayout.BeginScrollView(scroll_camera1, GUILayout.Width(350), GUILayout.Height(350));
-        GUI.DrawTexture(new Rect(0.0f, 0.0f, 350, 350), renderTexture2);
+                GUI.DrawTexture(new Rect(0.0f, 0.0f, 350, 350), renderTexture2);
+                EditorGUILayout.EndScrollView();
 
-        EditorGUILayout.EndScrollView();
-
+                //Particle Pixel Render
                 scroll_camera2 = EditorGUILayout.BeginScrollView(scroll_camera2, GUILayout.Width(350), GUILayout.Height(350));
-        GUI.DrawTexture(new Rect(0.0f, 0.0f, 350, 350), renderTexture);
-        EditorGUILayout.EndScrollView();
-
+                GUI.DrawTexture(new Rect(0.0f, 0.0f, 350, 350), renderTexture);
+                EditorGUILayout.EndScrollView();
+                
+                //Option Column
                 scroll_options = EditorGUILayout.BeginScrollView(scroll_options, GUILayout.Width(100), GUILayout.Height(350));
                 DrawOptions();
                 EditorGUILayout.EndScrollView();
 
             EditorGUILayout.EndHorizontal();
 
+            //Layer Bar
             EditorGUILayout.BeginHorizontal();
 
                 scroll_layers = EditorGUILayout.BeginScrollView(scroll_layers, GUILayout.Width(650), GUILayout.Height(100));
@@ -128,9 +156,10 @@ public class PixelParticleEditor_UI : EditorWindow
 
             EditorGUILayout.EndHorizontal();
 
-        scroll_functions = EditorGUILayout.BeginScrollView(scroll_functions, GUILayout.Width(600), GUILayout.Height(250));
-        DrawProperties();
-        EditorGUILayout.EndScrollView();
+            //Properties Bar
+            scroll_functions = EditorGUILayout.BeginScrollView(scroll_functions, GUILayout.Width(600), GUILayout.Height(250));
+            DrawProperties();
+            EditorGUILayout.EndScrollView();
 
         EditorGUILayout.EndVertical();
 
@@ -189,29 +218,32 @@ public class PixelParticleEditor_UI : EditorWindow
         GUILayout.Label("Layers", EditorStyles.boldLabel);
         GUILayout.BeginHorizontal();
 
-        GUILayout.BeginVertical();
-        if (GUILayout.Button("1", GUILayout.Width(30), GUILayout.Height(30)))
-            current_option = OPTIONS.PARTICLES;
-        layer1 = GUILayout.Toggle(layer1,"");
-        GUILayout.EndVertical();
+        foreach (ParticleSystem particle in particles)
+        {
+            GUILayout.BeginVertical();
 
-        GUILayout.BeginVertical();
-        if (GUILayout.Button("2", GUILayout.Width(30), GUILayout.Height(30)))
-            current_option = OPTIONS.PARTICLES;
-        layer2 = GUILayout.Toggle(layer2, "");
-        GUILayout.EndVertical();
+            Color original_color = GUI.color;
+            if (Selection.activeObject != particle.gameObject)
+            {
+                GUI.color = new Color(0.5f, 0.5f, 0.5f);
+            }
 
-        GUILayout.BeginVertical();
-        if (GUILayout.Button("3", GUILayout.Width(30), GUILayout.Height(30)))
-            current_option = OPTIONS.PARTICLES;
-        layer2 = GUILayout.Toggle(layer2, "");
-        GUILayout.EndVertical();
+            if (GUILayout.Button(""+(particles.IndexOf(particle)+1), GUILayout.Width(30), GUILayout.Height(30)))
+                Selection.activeObject = particle.gameObject;
 
-        GUILayout.BeginVertical();
-        if (GUILayout.Button("4", GUILayout.Width(30), GUILayout.Height(30)))
-            current_option = OPTIONS.PARTICLES;
-        layer2 = GUILayout.Toggle(layer2, "");
-        GUILayout.EndVertical();
+            GUI.color = original_color;
+
+            bool active = particle.gameObject.activeSelf;
+            active = GUILayout.Toggle(active, "");
+            if (active != particle.gameObject.activeSelf)
+            {
+                particle.gameObject.SetActive(active);
+                if (active)
+                    particle.Play();
+            }
+
+            GUILayout.EndVertical();
+        }
 
         GUILayout.EndHorizontal();
     }
@@ -222,10 +254,24 @@ public class PixelParticleEditor_UI : EditorWindow
         GUILayout.BeginHorizontal();
 
         if (GUILayout.Button("+", GUILayout.Width(50), GUILayout.Height(40)))
-            current_option = OPTIONS.PARTICLES;
+        {
+            ParticleSystem new_particle = Instantiate(particle_prefab, new Vector3(-10000, -10, 10), Quaternion.identity, particles[0].gameObject.transform);
+            particles.Add(new_particle);
+            Selection.activeObject = new_particle.gameObject;
+            new_particle.Play(true);
+        }
 
         if (GUILayout.Button("-", GUILayout.Width(50), GUILayout.Height(40)))
-            current_option = OPTIONS.FX;
+        {
+            if (particles.Count > 1)
+            {
+                if (Selection.activeObject == particles[particles.Count - 1].gameObject)
+                    Selection.activeObject = particles[particles.Count - 2].gameObject;
+
+                DestroyImmediate(particles[particles.Count - 1].gameObject);
+                particles.RemoveAt(particles.Count - 1);
+            }
+        }   
 
         GUILayout.EndHorizontal();
     }
