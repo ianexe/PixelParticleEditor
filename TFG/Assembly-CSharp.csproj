@@ -62,8 +62,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Pixel Particle Editor\Scripts\PixelParticleEditor_UI.cs" />
-    <None Include="Assets\Pixel Particle Editor\Scripts\PixelShader.shader" />
+    <Compile Include="Assets\PixelParticleEditor_UI.cs" />
     <Reference Include="Unity.Timeline.Editor">
       <HintPath>C:/Users/itrue/Documents/GitHub/PixelParticleEditor/TFG/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>
     </Reference>
