@@ -41,6 +41,10 @@ public class PixelParticleEditor_UI : EditorWindow
     Texture2D texture_test;
     float slider_test = 0.0f;
 
+    int pixelation = 100;
+
+    ParticleSystem selected_particle;
+
     [MenuItem("Window/Pixel Particle Editor")]
     /*
     public static void ShowWindow()
@@ -59,8 +63,8 @@ public class PixelParticleEditor_UI : EditorWindow
     public void Awake()
     {
         //Pixel Render Texture
-        renderTexture = new RenderTexture((int)100,
-            (int)100,
+        renderTexture = new RenderTexture((int)pixelation,
+            (int)pixelation,
             (int)RenderTextureFormat.ARGB32);
         renderTexture.filterMode = FilterMode.Point;
 
@@ -71,6 +75,7 @@ public class PixelParticleEditor_UI : EditorWindow
 
         //Particle Init
         ParticleSystem particle_to_instantiate = Instantiate(particle_prefab, new Vector3(-10000, -10, 10), Quaternion.identity);
+        particle_to_instantiate.transform.Rotate(-90, 0, 0);
         particles = new List<ParticleSystem>();
         particles.Add(particle_to_instantiate);
 
@@ -80,7 +85,7 @@ public class PixelParticleEditor_UI : EditorWindow
 
     public void OnEnable()
     {
-        Selection.activeObject = particles[0].gameObject;
+        SelectParticle(particles[0]);
     }
 
     public void OnDestroy()
@@ -101,13 +106,7 @@ public class PixelParticleEditor_UI : EditorWindow
             camera.Render();
             camera.targetTexture = null;
         }
-        /*
-        if (renderTexture.width != position.width ||
-            renderTexture.height != position.height)
-            renderTexture = new RenderTexture((int)position.width,
-                (int)position.height,
-                (int)RenderTextureFormat.ARGB32);
-                */
+
     }
 
     private void OnGUI()
@@ -157,7 +156,7 @@ public class PixelParticleEditor_UI : EditorWindow
             EditorGUILayout.EndHorizontal();
 
             //Properties Bar
-            scroll_functions = EditorGUILayout.BeginScrollView(scroll_functions, GUILayout.Width(600), GUILayout.Height(250));
+            scroll_functions = EditorGUILayout.BeginScrollView(scroll_functions, GUILayout.Width(750), GUILayout.Height(250));
             DrawProperties();
             EditorGUILayout.EndScrollView();
 
@@ -171,21 +170,18 @@ public class PixelParticleEditor_UI : EditorWindow
         //Palettes
         GUILayout.BeginVertical();
         //---------------------------------------
-        GUILayout.Label("Layer 1 Colors", EditorStyles.boldLabel);
+        foreach (ParticleSystem particle in particles)
+        {
+            GUILayout.Label("Layer " + (particles.IndexOf(particle) + 1) + " Color", EditorStyles.boldLabel);
 
-        GUILayout.BeginHorizontal();
-        color = EditorGUILayout.ColorField(color);
-        EditorGUILayout.ColorField(color);
-        EditorGUILayout.ColorField(color);
-        GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            var main = particle.main;
+            Color color = main.startColor.color;
+            color = EditorGUILayout.ColorField(color);
+            main.startColor = color;
 
-        GUILayout.Label("Layer 2 Colors", EditorStyles.boldLabel);
-
-        GUILayout.BeginHorizontal();
-        color2 = EditorGUILayout.ColorField(color2);
-        EditorGUILayout.ColorField(color2);
-        EditorGUILayout.ColorField(color2);
-        GUILayout.EndHorizontal();
+            GUILayout.EndHorizontal();
+        }
         //---------------------------------------
         GUILayout.EndVertical();
     }
@@ -228,8 +224,8 @@ public class PixelParticleEditor_UI : EditorWindow
                 GUI.color = new Color(0.5f, 0.5f, 0.5f);
             }
 
-            if (GUILayout.Button(""+(particles.IndexOf(particle)+1), GUILayout.Width(30), GUILayout.Height(30)))
-                Selection.activeObject = particle.gameObject;
+            if (GUILayout.Button("" + (particles.IndexOf(particle) + 1), GUILayout.Width(30), GUILayout.Height(30)))
+                SelectParticle(particle);
 
             GUI.color = original_color;
 
@@ -256,8 +252,9 @@ public class PixelParticleEditor_UI : EditorWindow
         if (GUILayout.Button("+", GUILayout.Width(50), GUILayout.Height(40)))
         {
             ParticleSystem new_particle = Instantiate(particle_prefab, new Vector3(-10000, -10, 10), Quaternion.identity, particles[0].gameObject.transform);
+            new_particle.transform.Rotate(-90, 0, 0);
             particles.Add(new_particle);
-            Selection.activeObject = new_particle.gameObject;
+            SelectParticle(new_particle);
             new_particle.Play(true);
         }
 
@@ -266,7 +263,7 @@ public class PixelParticleEditor_UI : EditorWindow
             if (particles.Count > 1)
             {
                 if (Selection.activeObject == particles[particles.Count - 1].gameObject)
-                    Selection.activeObject = particles[particles.Count - 2].gameObject;
+                    SelectParticle(particles[particles.Count - 2]);
 
                 DestroyImmediate(particles[particles.Count - 1].gameObject);
                 particles.RemoveAt(particles.Count - 1);
@@ -282,10 +279,10 @@ public class PixelParticleEditor_UI : EditorWindow
         switch (current_option)
         {
             case OPTIONS.PARTICLES:
-                DrawPropertiesTemp();
+                DrawPropertiesParticle();
                 break;
             case OPTIONS.FX:
-                DrawPropertiesTemp();
+                DrawPropertiesFX();
                 break;
             case OPTIONS.CAMERA:
                 DrawPropertiesTemp();
@@ -318,6 +315,245 @@ public class PixelParticleEditor_UI : EditorWindow
         GUILayout.EndHorizontal();
     }
 
+    void DrawPropertiesParticle()
+    {
+        GUILayout.BeginHorizontal();
+
+        GUILayout.BeginVertical();
+
+        /*
+        ParticleSystemRenderer particle_renderer;
+        particle_renderer = selected_particle.GetComponent <ParticleSystemRenderer>();
+        Texture texture_select = particle_renderer.sharedMaterial.mainTexture;
+
+        GUILayout.Label("Texture", EditorStyles.label);
+        texture_select = (Texture)EditorGUILayout.ObjectField(texture_select, typeof(Texture), false);
+
+        if (texture_select != particle_renderer.sharedMaterial.mainTexture)
+        {
+            particle_renderer.sharedMaterial.mainTexture = texture_select;
+        }
+        */
+
+        var main = selected_particle.main;
+
+        /*
+        GUILayout.Label("Time Duration", EditorStyles.label);
+        float particle_duration = main.duration;
+        particle_duration = GUILayout.HorizontalSlider(particle_duration, 0.0f, 20.0f);
+        main.duration = particle_duration;
+        */
+
+        GUILayout.Label("Time Delay", EditorStyles.label);
+        float particle_delay = main.startDelay.constant;
+        particle_delay = GUILayout.HorizontalSlider(particle_delay, 0.0f, 20.0f);
+        main.startDelay = particle_delay;
+
+        GUILayout.Label("Loop", EditorStyles.label);
+        bool particle_loop = main.loop;
+        particle_loop = GUILayout.Toggle(particle_loop, "");
+        main.loop = particle_loop;
+
+        if (GUILayout.Button("Reset\n Animation", GUILayout.Width(65), GUILayout.Height(40)))
+        {
+            particles[0].Simulate(0.0f);
+            particles[0].Play();
+        }
+
+        GUILayout.EndVertical();
+
+        GUILayout.BeginVertical();
+
+        GUILayout.Label("Particle Lifetime", EditorStyles.label);
+        float particle_time = main.startLifetime.constant;
+        particle_time = GUILayout.HorizontalSlider(particle_time, 0.0f, 20.0f);
+        main.startLifetime = particle_time;
+
+        GUILayout.Label("Particle Speed", EditorStyles.label);
+        float particle_speed = main.startSpeed.constant;
+        particle_speed = GUILayout.HorizontalSlider(particle_speed, 0.0f, 20.0f);
+        main.startSpeed = particle_speed;
+
+        GUILayout.Label("Particle Size", EditorStyles.label);
+        float particle_size = main.startSize.constant;
+        particle_size = GUILayout.HorizontalSlider(particle_size, 0.0f, 20.0f);
+        main.startSize = particle_size;
+
+        GUILayout.Label("Size Increment", EditorStyles.label);
+        var size_ol = selected_particle.sizeOverLifetime;
+        int size_increment;
+        AnimationCurve curve1 = AnimationCurve.Linear(0.0f, 0.0f, 1.0f, 1.0f);
+        AnimationCurve curve2 = AnimationCurve.Linear(0.0f, 1.0f, 1.0f, 0.0f);
+        AnimationCurve curve3 = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
+        AnimationCurve curve4 = AnimationCurve.EaseInOut(0.0f, 1.0f, 1.0f, 0.0f);
+        if (!size_ol.enabled)
+            size_increment = 0;
+        else
+        {
+            if (size_ol.size.curve.Equals(curve1))
+                size_increment = 1;
+
+            else if (size_ol.size.curve.Equals(curve2))
+                size_increment = 2;
+
+            else if(size_ol.size.curve.Equals(curve3))
+                size_increment = 3;
+
+            else
+                size_increment = 4;
+        }
+            
+        string[] size_options = new string[] 
+        {
+            "None",
+            "Linear Increase",
+            "Linear Decrease",
+            "Ease-in-out Increase",
+            "Ease-in-out Decrease"
+        };
+        size_increment = EditorGUILayout.Popup(size_increment, size_options);
+
+        switch (size_increment)
+        {
+            case 0:
+                size_ol.enabled = false;
+                break;
+            case 1:
+                size_ol.enabled = true;
+                size_ol.size = new ParticleSystem.MinMaxCurve(1.0f, curve1);
+                break;
+            case 2:
+                size_ol.enabled = true;
+                size_ol.size = new ParticleSystem.MinMaxCurve(1.0f, curve2);
+                break;
+            case 3:
+                size_ol.enabled = true;
+                size_ol.size = new ParticleSystem.MinMaxCurve(1.0f, curve3);
+                break;
+            case 4:
+                size_ol.enabled = true;
+                size_ol.size = new ParticleSystem.MinMaxCurve(1.0f, curve4);
+                break;
+            default:
+                Debug.LogError("Unrecognized Option");
+                break;
+        }
+
+        GUILayout.EndVertical();
+
+        GUILayout.BeginVertical();
+
+        GUILayout.Label("Gravity", EditorStyles.label);
+        float gravity = main.gravityModifier.constant;
+        gravity = GUILayout.HorizontalSlider(gravity, 0.0f, 1.0f);
+        main.gravityModifier = gravity;
+
+        GUILayout.Label("Max Particles", EditorStyles.label);
+        int max_particles = main.maxParticles;
+        max_particles = EditorGUILayout.IntSlider(max_particles, 0, 2000);
+        main.maxParticles = max_particles;
+
+        GUILayout.Label("Particles per Second", EditorStyles.label);
+        float particles_second = selected_particle.emission.rateOverTime.constant;
+        particles_second = EditorGUILayout.Slider(particles_second, 0.0f, 500.0f);
+        var emitter = selected_particle.emission;
+        emitter.rateOverTime = particles_second;
+
+        GUILayout.EndVertical();
+
+        GUILayout.BeginVertical();
+
+        GUILayout.Label("Shape", EditorStyles.label);
+        bool particle_shape = selected_particle.shape.enabled;
+        particle_shape = GUILayout.Toggle(particle_shape, "");
+        var shape = selected_particle.shape;
+        shape.enabled = particle_shape;
+
+        string[] shape_options = new string[]
+        {
+            "Sphere",
+            "Hemisphere",
+            "Cone",
+            "Circle"
+        };
+
+        int shape_value;
+        if (shape.shapeType == ParticleSystemShapeType.Sphere)
+            shape_value = 0;
+
+        else if (shape.shapeType == ParticleSystemShapeType.Hemisphere)
+            shape_value = 1;
+
+        else if (shape.shapeType == ParticleSystemShapeType.Cone)
+            shape_value = 2;
+
+        else
+            shape_value = 3;
+
+        shape_value = EditorGUILayout.Popup(shape_value, shape_options);
+
+        switch (shape_value)
+        {
+            case 0:
+                shape.shapeType = ParticleSystemShapeType.Sphere;
+                break;
+
+            case 1:
+                shape.shapeType = ParticleSystemShapeType.Hemisphere;
+                break;
+
+            case 2:
+                shape.shapeType = ParticleSystemShapeType.Cone;
+
+                float cone_angle = shape.angle;
+                cone_angle = GUILayout.HorizontalSlider(cone_angle, 0.0f, 90.0f);
+                shape.angle = cone_angle;
+                break;
+
+            case 3:
+                shape.shapeType = ParticleSystemShapeType.Circle;
+                break;
+
+            default:
+                Debug.LogError("Unrecognized Option");
+                break;
+        }
+
+        GUILayout.EndVertical();
+
+        GUILayout.BeginVertical();
+
+        Vector3 particle_position = shape.position;
+        particle_position = EditorGUILayout.Vector3Field("Position:", particle_position);
+        shape.position = particle_position;
+
+        Vector3 particle_rotation = shape.rotation;
+        particle_rotation = EditorGUILayout.Vector3Field("Rotation:", particle_rotation);
+        shape.rotation = particle_rotation;
+
+        Vector3 particle_scale = shape.scale;
+        particle_scale = EditorGUILayout.Vector3Field("Scale:", particle_scale);
+        shape.scale = particle_scale;
+
+        GUILayout.EndVertical();
+
+        GUILayout.EndHorizontal();
+    }
+
+    void DrawPropertiesFX()
+    {
+        GUILayout.Label("Pixelation", EditorStyles.label);
+        int prev_pixelation = pixelation;
+        pixelation = EditorGUILayout.IntSlider(pixelation, 175, 0);
+        if (pixelation != prev_pixelation)
+        {
+            renderTexture.Release();
+            renderTexture = new RenderTexture(pixelation, pixelation, (int)RenderTextureFormat.ARGB32);
+            renderTexture.filterMode = FilterMode.Point;
+        }
+
+    }
+
     void DrawPropertiesExport()
     {
         GUILayout.BeginHorizontal();
@@ -344,5 +580,11 @@ public class PixelParticleEditor_UI : EditorWindow
         tex.ReadPixels(new Rect(0, 0, rTex.width, rTex.height), 0, 0);
         tex.Apply();
         return tex;
+    }
+
+    void SelectParticle(ParticleSystem to_select)
+    {
+        Selection.activeObject = to_select.gameObject;
+        selected_particle = to_select;
     }
 }
