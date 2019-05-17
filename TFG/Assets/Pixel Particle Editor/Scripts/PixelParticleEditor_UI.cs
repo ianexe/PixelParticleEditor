@@ -50,6 +50,7 @@ public class PixelParticleEditor_UI : EditorWindow
     bool wait_one_frame = false;
     bool render_active = false;
     List<Texture2D> rendered_textures;
+    string render_path = "Export";
 
     [MenuItem("Window/Pixel Particle Editor")]
     /*
@@ -135,11 +136,10 @@ public class PixelParticleEditor_UI : EditorWindow
 
                 if (current_frame >= render_frames+1)
                 {
-                    SaveTexture2("ss");
+                    SaveSpritesheet();
                     particles[0].Play();
                     SelectParticle(selected_particle);
                     render_active = false;
-                    rendered_textures.Clear();
                 }
             } 
         }
@@ -601,7 +601,7 @@ public class PixelParticleEditor_UI : EditorWindow
         GUILayout.EndVertical();
 
         GUILayout.BeginVertical();
-        if (GUILayout.Button("Export\n Sprite Sheet", GUILayout.Width(60), GUILayout.Height(40)))
+        if (GUILayout.Button("Export\n Sprite Sheet", GUILayout.Width(70), GUILayout.Height(40)))
         {
             render_active = true;
             wait_one_frame = false;
@@ -610,15 +610,19 @@ public class PixelParticleEditor_UI : EditorWindow
         GUILayout.EndVertical();
 
         GUILayout.BeginVertical();
+        /*
         if (GUILayout.Button("Simulate", GUILayout.Width(60), GUILayout.Height(40)))
         {
             particles[0].Simulate(render_time);
             //string name = "frametest";
             //SaveTexture2(name);
         }
-        render_time = EditorGUILayout.FloatField("Time:", render_time);
-        render_frames = EditorGUILayout.IntField("Frames:", render_frames);
-        current_frame = EditorGUILayout.IntSlider("Current Frame:", current_frame, 0, render_frames);
+        */
+        render_time = EditorGUILayout.FloatField("Render Time:", render_time);
+        render_frames = EditorGUILayout.IntField("Frames to Render:", render_frames);
+        //current_frame = EditorGUILayout.IntSlider("Current Frame:", current_frame, 0, render_frames);
+        render_path = EditorGUILayout.TextField("File Name:", render_path);
+
         GUILayout.EndVertical();
 
         GUILayout.EndHorizontal();
@@ -637,11 +641,9 @@ public class PixelParticleEditor_UI : EditorWindow
         rendered_textures.Add(new_texture);
     }
 
-    public void SaveTexture2(string name)
+    public void SaveSpritesheet()
     {
         Texture2D texture = new Texture2D(pixelation*render_frames, pixelation);
-
-        //texture.PackTextures(rendered_textures.ToArray(),0, pixelation);
 
         for (int i = 0; i < render_frames; i++)
         {
@@ -656,8 +658,18 @@ public class PixelParticleEditor_UI : EditorWindow
         }
 
         byte[] bytes = texture.EncodeToPNG();
-        string path = Application.dataPath + "/"+name+".png";
+
+        if (!AssetDatabase.IsValidFolder("Assets/Particle Render"))
+        {
+            AssetDatabase.CreateFolder("Assets", "Particle Render");
+        }
+
+        string path = Application.dataPath + "/Particle Render/"+ render_path + ".png";
         System.IO.File.WriteAllBytes(path, bytes);
+
+        AssetDatabase.Refresh();
+
+        rendered_textures.Clear();
     }
 
     Texture2D CreateTexture2D(RenderTexture rTex)
