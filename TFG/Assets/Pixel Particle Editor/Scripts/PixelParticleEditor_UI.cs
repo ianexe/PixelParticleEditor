@@ -44,6 +44,12 @@ public class PixelParticleEditor_UI : EditorWindow
     int pixelation = 100;
 
     ParticleSystem selected_particle;
+    float render_time = 5.0f;
+    int render_frames = 8;
+    int current_frame = 0;
+    bool wait_one_frame = false;
+    bool render_active = false;
+    List<Texture2D> rendered_textures;
 
     [MenuItem("Window/Pixel Particle Editor")]
     /*
@@ -81,6 +87,9 @@ public class PixelParticleEditor_UI : EditorWindow
 
         //Camera Init
         camera = Instantiate(camera, new Vector3(-10000,0,0), Quaternion.identity);
+
+        //Rendered Texture List Init
+        rendered_textures = new List<Texture2D>();
     }
 
     public void OnEnable()
@@ -105,6 +114,34 @@ public class PixelParticleEditor_UI : EditorWindow
             camera.targetTexture = renderTexture2;
             camera.Render();
             camera.targetTexture = null;
+        }
+
+        if (render_active)
+        {
+            float current_time = render_time / render_frames * current_frame;
+            particles[0].Simulate(current_time);
+            current_frame++;
+
+            if (wait_one_frame == false)
+            {
+                wait_one_frame = true;
+            }
+                
+            else
+            {
+                //string name = "frame" + (current_frame-1);
+                //SaveTexture2(name);
+                SaveFrameToList();
+
+                if (current_frame >= render_frames+1)
+                {
+                    SaveTexture2("ss");
+                    particles[0].Play();
+                    SelectParticle(selected_particle);
+                    render_active = false;
+                    rendered_textures.Clear();
+                }
+            } 
         }
 
     }
@@ -559,8 +596,29 @@ public class PixelParticleEditor_UI : EditorWindow
         GUILayout.BeginHorizontal();
 
         GUILayout.BeginVertical();
-        if (GUILayout.Button("Export PNG", GUILayout.Width(50), GUILayout.Height(40)))
+        if (GUILayout.Button("Export\n PNG", GUILayout.Width(60), GUILayout.Height(40)))
             SaveTexture();
+        GUILayout.EndVertical();
+
+        GUILayout.BeginVertical();
+        if (GUILayout.Button("Export\n Sprite Sheet", GUILayout.Width(60), GUILayout.Height(40)))
+        {
+            render_active = true;
+            wait_one_frame = false;
+            current_frame = 0;
+        }   
+        GUILayout.EndVertical();
+
+        GUILayout.BeginVertical();
+        if (GUILayout.Button("Simulate", GUILayout.Width(60), GUILayout.Height(40)))
+        {
+            particles[0].Simulate(render_time);
+            //string name = "frametest";
+            //SaveTexture2(name);
+        }
+        render_time = EditorGUILayout.FloatField("Time:", render_time);
+        render_frames = EditorGUILayout.IntField("Frames:", render_frames);
+        current_frame = EditorGUILayout.IntSlider("Current Frame:", current_frame, 0, render_frames);
         GUILayout.EndVertical();
 
         GUILayout.EndHorizontal();
@@ -570,6 +628,35 @@ public class PixelParticleEditor_UI : EditorWindow
     {
         byte[] bytes = CreateTexture2D(renderTexture).EncodeToPNG();
         string path = Application.dataPath + "/test.png";
+        System.IO.File.WriteAllBytes(path, bytes);
+    }
+
+    public void SaveFrameToList()
+    {
+        Texture2D new_texture = CreateTexture2D(renderTexture);
+        rendered_textures.Add(new_texture);
+    }
+
+    public void SaveTexture2(string name)
+    {
+        Texture2D texture = new Texture2D(pixelation*render_frames, pixelation);
+
+        //texture.PackTextures(rendered_textures.ToArray(),0, pixelation);
+
+        for (int i = 0; i < render_frames; i++)
+        {
+            for (int x = 0; x < pixelation; x++)
+            {
+                for (int y = 0; y < pixelation; y++)
+                {
+                    Color to_render = rendered_textures[i].GetPixel(x, y);
+                    texture.SetPixel(x + pixelation*i, y, to_render);
+                }
+            }
+        }
+
+        byte[] bytes = texture.EncodeToPNG();
+        string path = Application.dataPath + "/"+name+".png";
         System.IO.File.WriteAllBytes(path, bytes);
     }
 
