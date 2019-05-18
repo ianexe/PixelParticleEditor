@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: PixelMaterial
-  m_Shader: {fileID: 10752, guid: 0000000000000000f000000000000000, type: 0}
+  m_Shader: {fileID: 4800000, guid: 101883239e6c5fc40b164a2888ec0d01, type: 3}
   m_ShaderKeywords: PIXELSNAP_ON _ALPHABLEND_ON
   m_LightmapFlags: 0
   m_EnableInstancingVariants: 0
@@ -75,7 +75,7 @@ Material:
     - _ColorMask: 15
     - _ColorMode: 0
     - _Cull: 2
-    - _Cutoff: 1
+    - _Cutoff: 0.99
     - _CutoutThresh: 0.863
     - _DetailNormalMapScale: 1
     - _Distance: 1

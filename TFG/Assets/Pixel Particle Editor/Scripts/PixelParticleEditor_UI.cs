@@ -62,8 +62,11 @@ public class PixelParticleEditor_UI : EditorWindow
 
     static void Init()
     {
-        EditorWindow editorWindow = GetWindow(typeof(PixelParticleEditor_UI));
+        EditorWindow editorWindow = GetWindow<PixelParticleEditor_UI>("Pixel Particle Editor");
         editorWindow.autoRepaintOnSceneChange = true;
+        editorWindow.minSize = new Vector2(950, 650);
+        editorWindow.maxSize = new Vector2(950, 650);
+        editorWindow.maximized = true;
         editorWindow.Show();
     }
 
@@ -83,11 +86,13 @@ public class PixelParticleEditor_UI : EditorWindow
         //Particle Init
         ParticleSystem particle_to_instantiate = Instantiate(particle_prefab, new Vector3(-10000, -10, 10), Quaternion.identity);
         particle_to_instantiate.transform.Rotate(-90, 0, 0);
+        particle_to_instantiate.gameObject.hideFlags = HideFlags.HideInHierarchy;
         particles = new List<ParticleSystem>();
         particles.Add(particle_to_instantiate);
 
         //Camera Init
         camera = Instantiate(camera, new Vector3(-10000,0,0), Quaternion.identity);
+        camera.gameObject.hideFlags = HideFlags.HideInHierarchy;
 
         //Rendered Texture List Init
         rendered_textures = new List<Texture2D>();
@@ -100,14 +105,20 @@ public class PixelParticleEditor_UI : EditorWindow
 
     public void OnDestroy()
     {
-        DestroyImmediate(particles[0].gameObject);
+        if (particles[0])
+            DestroyImmediate(particles[0].gameObject);
+
         particles.Clear();
         
-        DestroyImmediate(camera.gameObject);
+        if (camera)
+            DestroyImmediate(camera.gameObject);
     }
 
     public void Update()
     {
+        if (!camera || !particles[0])
+            Close();
+
         if (camera != null)
         {
             camera.targetTexture = renderTexture;
@@ -144,6 +155,12 @@ public class PixelParticleEditor_UI : EditorWindow
             } 
         }
 
+    }
+
+    private void OnFocus()
+    {
+        if (selected_particle != null)
+            SelectParticle(selected_particle);
     }
 
     private void OnGUI()
@@ -290,6 +307,7 @@ public class PixelParticleEditor_UI : EditorWindow
         {
             ParticleSystem new_particle = Instantiate(particle_prefab, new Vector3(-10000, -10, 10), Quaternion.identity, particles[0].gameObject.transform);
             new_particle.transform.Rotate(-90, 0, 0);
+            new_particle.gameObject.hideFlags = HideFlags.HideInHierarchy;
             particles.Add(new_particle);
             SelectParticle(new_particle);
             new_particle.Play(true);
@@ -581,7 +599,7 @@ public class PixelParticleEditor_UI : EditorWindow
     {
         GUILayout.Label("Pixelation", EditorStyles.label);
         int prev_pixelation = pixelation;
-        pixelation = EditorGUILayout.IntSlider(pixelation, 175, 0);
+        pixelation = EditorGUILayout.IntSlider(pixelation, 256, 8);
         if (pixelation != prev_pixelation)
         {
             renderTexture.Release();

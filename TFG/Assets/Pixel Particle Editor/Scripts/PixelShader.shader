@@ -3,16 +3,17 @@
 	Properties
 	{
 		_MainTex("Texture", 2D) = "white" {}
-		_Cutoff("Alpha cutoff", Range(0.000000,1.000000)) = 0.500000
+	_Cutoff("Alpha cutoff", Range(0,1)) = 0.5
 	}
 		SubShader
 	{
-		Tags{ "RenderType" = "TransparentCutout" "Queue" = "Transparent" }
+		Tags{ "RenderType" = "Transparent" "Queue" = "Transparent" }
 		LOD 100
 		//Blend One One
-		//Zwrite Off
-		//Cull Back
-		//Pass
+		Zwrite Off
+		Blend SrcAlpha OneMinusSrcAlpha
+		Cull Back
+		Pass
 	{
 		CGPROGRAM
 #pragma vertex vert
@@ -36,6 +37,7 @@
 	};
 	sampler2D _MainTex;
 	float4 _MainTex_ST;
+	fixed _Cutoff;
 
 	v2f vert(appdata v)
 	{
@@ -51,6 +53,7 @@
 	{
 		// sample the texture
 		fixed4 col = tex2D(_MainTex, i.uv) * i.color;
+	clip(col.a - _Cutoff);
 	// apply fog
 	UNITY_APPLY_FOG(i.fogCoord, col);
 	return col;
