@@ -52,6 +52,7 @@ public class PixelParticleEditor_UI : EditorWindow
     bool render_active = false;
     List<Texture2D> rendered_textures;
     string render_path = "Export";
+    string export_name = "Pixel Particle";
 
     [MenuItem("Window/Pixel Particle Editor")]
     /*
@@ -359,6 +360,9 @@ public class PixelParticleEditor_UI : EditorWindow
 
                 DestroyImmediate(particles[particles.Count - 1].gameObject);
                 particles.RemoveAt(particles.Count - 1);
+
+                DestroyImmediate(materials[materials.Count - 1]);
+                materials.RemoveAt(materials.Count - 1);
             }
         }   
 
@@ -646,37 +650,66 @@ public class PixelParticleEditor_UI : EditorWindow
     {
         GUILayout.BeginHorizontal();
 
-        GUILayout.BeginVertical();
-        if (GUILayout.Button("Export\n PNG", GUILayout.Width(60), GUILayout.Height(40)))
-            SaveTexture();
-        GUILayout.EndVertical();
-
-        GUILayout.BeginVertical();
-        if (GUILayout.Button("Export\n Sprite Sheet", GUILayout.Width(70), GUILayout.Height(40)))
+        GUILayout.BeginVertical("Box");
+        if (GUILayout.Button("Export\n Sprite Sheet", GUILayout.Width(90), GUILayout.Height(40)))
         {
             render_active = true;
             wait_one_frame = false;
             current_frame = 0;
-        }   
-        GUILayout.EndVertical();
-
-        GUILayout.BeginVertical();
-        /*
-        if (GUILayout.Button("Simulate", GUILayout.Width(60), GUILayout.Height(40)))
-        {
-            particles[0].Simulate(render_time);
-            //string name = "frametest";
-            //SaveTexture2(name);
         }
-        */
+        GUILayout.Space(20.0f);
         render_time = EditorGUILayout.FloatField("Render Time:", render_time);
         render_frames = EditorGUILayout.IntField("Frames to Render:", render_frames);
-        //current_frame = EditorGUILayout.IntSlider("Current Frame:", current_frame, 0, render_frames);
         render_path = EditorGUILayout.TextField("File Name:", render_path);
 
         GUILayout.EndVertical();
 
+        GUILayout.BeginVertical("Box");
+        if (GUILayout.Button("Export\n Game Object", GUILayout.Width(90), GUILayout.Height(40)))
+        {
+            SaveGameObject(export_name);
+        }
+        GUILayout.Space(20.0f);
+        export_name = EditorGUILayout.TextField("Game Object Name:", export_name);
+        GUILayout.Space(36.0f);
+        GUILayout.EndVertical();
+
         GUILayout.EndHorizontal();
+    }
+
+    public void SaveGameObject(string name)
+    {
+        if (particles[0] != null)
+        {
+            if (!AssetDatabase.IsValidFolder("Assets/Particle Export"))
+            {
+                AssetDatabase.CreateFolder("Assets", "Particle Export");
+            }
+
+            List<Material> export_materials = new List<Material>();
+
+            foreach (Material material in materials)
+            {
+                export_materials.Add(new Material(material));
+                AssetDatabase.CreateAsset(export_materials[materials.IndexOf(material)], "Assets/Particle Export/" + name + "_Material" + materials.IndexOf(material) + ".mat");
+            }
+
+            GameObject to_export = Instantiate(particles[0].gameObject, new Vector3(0, -90, 0), Quaternion.identity);
+            ParticleSystemRenderer export_renderer = to_export.GetComponent<ParticleSystemRenderer>();
+            export_renderer.material = export_materials[0];
+
+            for (int i = 0; i < to_export.transform.childCount; i++)
+            {
+                export_renderer = to_export.transform.GetChild(i).GetComponent<ParticleSystemRenderer>();
+                export_renderer.material = export_materials[i+1];
+            }
+
+            export_materials.Clear();
+
+            PrefabUtility.SaveAsPrefabAsset(to_export, "Assets/Particle Export/" + name + ".prefab");
+
+            DestroyImmediate(to_export);
+        }
     }
 
     public void SaveTexture()
@@ -759,6 +792,7 @@ public class PixelParticleEditor_UI : EditorWindow
         particle_renderer.sortingFudge = particles.IndexOf(to_return) * -10;
 
         particle_renderer.sharedMaterial = new Material(particle_prefab.GetComponent<Renderer>().sharedMaterial);
+        materials.Add(particle_renderer.sharedMaterial);
 
         to_return.Play(true);
 
