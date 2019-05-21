@@ -68,6 +68,7 @@ Material:
     - _Amount: 1
     - _Amplitude: 1
     - _BlendOp: 0
+    - _Blending: 0
     - _BumpScale: 1
     - _CameraFadingEnabled: 0
     - _CameraFarFadeDistance: 2

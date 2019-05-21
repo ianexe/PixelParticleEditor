@@ -34,6 +34,7 @@ public class PixelParticleEditor_UI : EditorWindow
     public Camera camera;
     public ParticleSystem particle_prefab;
     List<ParticleSystem> particles;
+    List<Material> materials;
 
     RenderTexture renderTexture;
     RenderTexture renderTexture2;
@@ -84,11 +85,9 @@ public class PixelParticleEditor_UI : EditorWindow
             (int)RenderTextureFormat.ARGB32);
 
         //Particle Init
-        ParticleSystem particle_to_instantiate = Instantiate(particle_prefab, new Vector3(-10000, -10, 10), Quaternion.identity);
-        particle_to_instantiate.transform.Rotate(-90, 0, 0);
-        particle_to_instantiate.gameObject.hideFlags = HideFlags.HideInHierarchy;
         particles = new List<ParticleSystem>();
-        particles.Add(particle_to_instantiate);
+        materials = new List<Material>();
+        CreateParticle();
 
         //Camera Init
         camera = Instantiate(camera, new Vector3(-10000,0,0), Quaternion.identity);
@@ -109,7 +108,9 @@ public class PixelParticleEditor_UI : EditorWindow
             DestroyImmediate(particles[0].gameObject);
 
         particles.Clear();
-        
+
+        materials.Clear();
+
         if (camera)
             DestroyImmediate(camera.gameObject);
     }
@@ -228,6 +229,42 @@ public class PixelParticleEditor_UI : EditorWindow
         {
             GUILayout.Label("Layer " + (particles.IndexOf(particle) + 1) + " Color", EditorStyles.boldLabel);
 
+            int blending;
+
+            if (particle.GetComponent<Renderer>().sharedMaterial.shader == Shader.Find("Unlit/PixelShader"))
+                blending = 0;
+
+            else if (particle.GetComponent<Renderer>().sharedMaterial.shader == Shader.Find("Unlit/PixelShaderAdditive"))
+                blending = 1;
+
+            else
+                blending = 2;
+
+            string[] blending_options = new string[]
+            {
+            "Normal",
+            "Additive",
+            "Subtractive"
+            };
+
+            blending = EditorGUILayout.Popup(blending, blending_options);
+
+            switch (blending)
+            {
+                case 0:
+                    if (particle.GetComponent<Renderer>().sharedMaterial.shader != Shader.Find("Unlit/PixelShader"))
+                        particle.GetComponent<Renderer>().sharedMaterial.shader = Shader.Find("Unlit/PixelShader");
+                    break;
+                case 1:
+                    if (particle.GetComponent<Renderer>().sharedMaterial.shader != Shader.Find("Unlit/PixelShaderAdditive"))
+                        particle.GetComponent<Renderer>().sharedMaterial.shader = Shader.Find("Unlit/PixelShaderAdditive");
+                    break;
+                case 2:
+                    if (particle.GetComponent<Renderer>().sharedMaterial.shader != Shader.Find("Unlit/PixelShaderSubtractive"))
+                        particle.GetComponent<Renderer>().sharedMaterial.shader = Shader.Find("Unlit/PixelShaderSubtractive");
+                    break;
+            }
+
             GUILayout.BeginHorizontal();
             var main = particle.main;
             Color color = main.startColor.color;
@@ -245,22 +282,27 @@ public class PixelParticleEditor_UI : EditorWindow
         GUILayout.Label("Functions", EditorStyles.boldLabel);
         GUILayout.BeginVertical();
 
-        if (GUILayout.Button("Particles", GUILayout.Width(60), GUILayout.Height(50)))
-            current_option = OPTIONS.PARTICLES;
-
-        if (GUILayout.Button("FX", GUILayout.Width(60), GUILayout.Height(50)))
-            current_option = OPTIONS.FX;
-
-        if (GUILayout.Button("Camera", GUILayout.Width(60), GUILayout.Height(50)))
-            current_option = OPTIONS.CAMERA;
-
-        if (GUILayout.Button("Import", GUILayout.Width(60), GUILayout.Height(50)))
-            current_option = OPTIONS.IMPORT;
-
-        if (GUILayout.Button("Export", GUILayout.Width(60), GUILayout.Height(50)))
-            current_option = OPTIONS.EXPORT;
-
+        DrawOptionButton(OPTIONS.PARTICLES, "Particles");
+        DrawOptionButton(OPTIONS.FX, "FX");
+        DrawOptionButton(OPTIONS.CAMERA, "Camera");
+        DrawOptionButton(OPTIONS.IMPORT, "Import");
+        DrawOptionButton(OPTIONS.EXPORT, "Export");
+        
         GUILayout.EndVertical();
+    }
+
+    void DrawOptionButton(OPTIONS option, string button_text)
+    {
+        Color original_color = GUI.color;
+        Color grey = new Color(0.5f, 0.5f, 0.5f);
+        if (current_option != option)
+        {
+            GUI.color = grey;
+        }
+        if (GUILayout.Button(button_text, GUILayout.Width(60), GUILayout.Height(50)))
+            current_option = option;
+
+        GUI.color = original_color;
     }
 
     void DrawLayers()
@@ -305,12 +347,7 @@ public class PixelParticleEditor_UI : EditorWindow
 
         if (GUILayout.Button("+", GUILayout.Width(50), GUILayout.Height(40)))
         {
-            ParticleSystem new_particle = Instantiate(particle_prefab, new Vector3(-10000, -10, 10), Quaternion.identity, particles[0].gameObject.transform);
-            new_particle.transform.Rotate(-90, 0, 0);
-            new_particle.gameObject.hideFlags = HideFlags.HideInHierarchy;
-            particles.Add(new_particle);
-            SelectParticle(new_particle);
-            new_particle.Play(true);
+            CreateParticle();
         }
 
         if (GUILayout.Button("-", GUILayout.Width(50), GUILayout.Height(40)))
@@ -376,7 +413,7 @@ public class PixelParticleEditor_UI : EditorWindow
 
         GUILayout.BeginVertical();
 
-        /*
+
         ParticleSystemRenderer particle_renderer;
         particle_renderer = selected_particle.GetComponent <ParticleSystemRenderer>();
         Texture texture_select = particle_renderer.sharedMaterial.mainTexture;
@@ -388,28 +425,25 @@ public class PixelParticleEditor_UI : EditorWindow
         {
             particle_renderer.sharedMaterial.mainTexture = texture_select;
         }
-        */
 
         var main = selected_particle.main;
 
-        /*
-        GUILayout.Label("Time Duration", EditorStyles.label);
-        float particle_duration = main.duration;
-        particle_duration = GUILayout.HorizontalSlider(particle_duration, 0.0f, 20.0f);
-        main.duration = particle_duration;
-        */
+        GUILayout.Label("Simulation Speed", EditorStyles.label);
+        float simulation_speed = main.simulationSpeed;
+        simulation_speed = EditorGUILayout.Slider(simulation_speed, 0.0f, 20.0f);
+        main.simulationSpeed = simulation_speed;
 
         GUILayout.Label("Time Delay", EditorStyles.label);
         float particle_delay = main.startDelay.constant;
-        particle_delay = GUILayout.HorizontalSlider(particle_delay, 0.0f, 20.0f);
+        particle_delay = EditorGUILayout.Slider(particle_delay, 0.0f, 20.0f);
         main.startDelay = particle_delay;
 
-        GUILayout.Label("Loop", EditorStyles.label);
         bool particle_loop = main.loop;
-        particle_loop = GUILayout.Toggle(particle_loop, "");
+        particle_loop = GUILayout.Toggle(particle_loop, " Loop");
         main.loop = particle_loop;
 
-        if (GUILayout.Button("Reset\n Animation", GUILayout.Width(65), GUILayout.Height(40)))
+
+        if (GUILayout.Button("Reset Animation", GUILayout.Width(120), GUILayout.Height(30)))
         {
             particles[0].Simulate(0.0f);
             particles[0].Play();
@@ -500,7 +534,7 @@ public class PixelParticleEditor_UI : EditorWindow
 
         GUILayout.Label("Gravity", EditorStyles.label);
         float gravity = main.gravityModifier.constant;
-        gravity = GUILayout.HorizontalSlider(gravity, 0.0f, 1.0f);
+        gravity = EditorGUILayout.Slider(gravity, -1.0f, 1.0f);
         main.gravityModifier = gravity;
 
         GUILayout.Label("Max Particles", EditorStyles.label);
@@ -510,7 +544,7 @@ public class PixelParticleEditor_UI : EditorWindow
 
         GUILayout.Label("Particles per Second", EditorStyles.label);
         float particles_second = selected_particle.emission.rateOverTime.constant;
-        particles_second = EditorGUILayout.Slider(particles_second, 0.0f, 500.0f);
+        particles_second = EditorGUILayout.Slider(particles_second, 0.0f, 2000.0f);
         var emitter = selected_particle.emission;
         emitter.rateOverTime = particles_second;
 
@@ -518,9 +552,8 @@ public class PixelParticleEditor_UI : EditorWindow
 
         GUILayout.BeginVertical();
 
-        GUILayout.Label("Shape", EditorStyles.label);
         bool particle_shape = selected_particle.shape.enabled;
-        particle_shape = GUILayout.Toggle(particle_shape, "");
+        particle_shape = GUILayout.Toggle(particle_shape, " Shape");
         var shape = selected_particle.shape;
         shape.enabled = particle_shape;
 
@@ -703,5 +736,32 @@ public class PixelParticleEditor_UI : EditorWindow
     {
         Selection.activeObject = to_select.gameObject;
         selected_particle = to_select;
+    }
+
+    ParticleSystem CreateParticle()
+    {
+        ParticleSystem to_return;
+
+        if (particles.Count <= 0)
+            to_return = Instantiate(particle_prefab, new Vector3(-10000, -10, 10), Quaternion.identity);
+
+        else
+            to_return = Instantiate(particle_prefab, new Vector3(-10000, -10, 10), Quaternion.identity, particles[0].gameObject.transform);
+
+        to_return.transform.Rotate(-90, 0, 0);
+        to_return.gameObject.hideFlags = HideFlags.HideInHierarchy;
+        to_return.randomSeed = (uint)(Random.Range(-2147483648, 2147483648));
+        particles.Add(to_return);
+        SelectParticle(to_return);
+
+        ParticleSystemRenderer particle_renderer;
+        particle_renderer = to_return.GetComponent<ParticleSystemRenderer>();
+        particle_renderer.sortingFudge = particles.IndexOf(to_return) * -10;
+
+        particle_renderer.sharedMaterial = new Material(particle_prefab.GetComponent<Renderer>().sharedMaterial);
+
+        to_return.Play(true);
+
+        return to_return;
     }
 }
