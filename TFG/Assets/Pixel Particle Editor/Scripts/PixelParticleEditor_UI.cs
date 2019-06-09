@@ -45,6 +45,9 @@ public class PixelParticleEditor_UI : EditorWindow
     int pixelation = 100;
 
     ParticleSystem selected_particle;
+
+    GameObject import_object = null;
+
     float render_time = 5.0f;
     int render_frames = 8;
     int current_frame = 0;
@@ -384,7 +387,7 @@ public class PixelParticleEditor_UI : EditorWindow
                 DrawPropertiesTemp();
                 break;
             case OPTIONS.IMPORT:
-                DrawPropertiesTemp();
+                DrawPropertiesImport();
                 break;
             case OPTIONS.EXPORT:
                 DrawPropertiesExport();
@@ -646,6 +649,39 @@ public class PixelParticleEditor_UI : EditorWindow
 
     }
 
+    void DrawPropertiesImport()
+    {
+        GUILayout.BeginVertical("Box");
+        GUILayout.BeginVertical();
+        import_object = (GameObject)EditorGUILayout.ObjectField(import_object, typeof(GameObject), true);
+        GUILayout.EndVertical();
+
+        GUILayout.BeginVertical();
+        if (GUILayout.Button("Import\n GameObject", GUILayout.Width(90), GUILayout.Height(40)))
+        {
+            if(import_object != null && import_object.GetComponent<ParticleSystem>())
+            {
+                if (EditorUtility.DisplayDialog("Warning", "Do you want to overwrite the current Particle?", "Yes", "No"))
+                {
+                    DestroyImmediate(particles[0].gameObject);
+                    particles.Clear();
+                    materials.Clear();
+
+                    CreateCustomParticle(import_object);
+                }
+            }
+
+            else
+            {
+                EditorUtility.DisplayDialog("Error","Selected GameObject does not contain a Particle System.","Accept");
+            }
+
+        }
+        GUILayout.EndVertical();
+        GUILayout.EndVertical();
+
+    }
+
     void DrawPropertiesExport()
     {
         GUILayout.BeginHorizontal();
@@ -795,6 +831,45 @@ public class PixelParticleEditor_UI : EditorWindow
         materials.Add(particle_renderer.sharedMaterial);
 
         to_return.Play(true);
+
+        return to_return;
+    }
+
+    ParticleSystem CreateCustomParticle(GameObject to_import)
+    {
+        ParticleSystem to_return;
+        ParticleSystem import_particle = to_import.GetComponent<ParticleSystem>();
+
+        to_return = Instantiate(import_particle, new Vector3(-10000, -10, 10), Quaternion.identity);
+
+        to_return.transform.Rotate(-90, 0, 0);
+        to_return.gameObject.hideFlags = HideFlags.HideInHierarchy;
+        particles.Add(to_return);
+        SelectParticle(to_return);
+
+        ParticleSystemRenderer particle_renderer;
+        particle_renderer = to_return.GetComponent<ParticleSystemRenderer>();
+        particle_renderer.sortingFudge = particles.IndexOf(to_return) * -10;
+
+        particle_renderer.sharedMaterial = new Material(import_particle.GetComponent<Renderer>().sharedMaterial);
+        materials.Add(particle_renderer.sharedMaterial);
+
+        for (int i = 0; i < to_import.transform.childCount; i++)
+        {
+            if (to_return.transform.GetChild(i).GetComponent<ParticleSystem>())
+            {
+                ParticleSystem import_child = to_return.transform.GetChild(i).GetComponent<ParticleSystem>();
+                particles.Add(import_child);
+
+                particle_renderer = to_return.transform.GetChild(i).GetComponent<ParticleSystemRenderer>();
+                particle_renderer.sortingFudge = particles.IndexOf(import_child) * -10;
+
+                particle_renderer.sharedMaterial = new Material(import_child.GetComponent<Renderer>().sharedMaterial);
+                materials.Add(particle_renderer.sharedMaterial);
+            }
+        }
+
+            to_return.Play(true);
 
         return to_return;
     }
