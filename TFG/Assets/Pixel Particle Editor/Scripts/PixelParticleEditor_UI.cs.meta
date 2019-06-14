@@ -9,6 +9,12 @@ MonoImporter:
       type: 3}
   - particle_prefab: {fileID: 3464182256390104701, guid: 481f3543ef14bdc43b39b75b315e4506,
       type: 3}
+  - preset_prefab_0: {fileID: 7655513951459380394, guid: 7a52a52d7a4c77d4183537476d6e196b,
+      type: 3}
+  - preset_prefab_1: {fileID: 8950856069890310790, guid: 01bb20b9ef3a9d04f9e2c8c384e52e3f,
+      type: 3}
+  - preset_prefab_2: {fileID: 1947843819386328274, guid: 697f12699d9a0b540bbbbcc363797e12,
+      type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

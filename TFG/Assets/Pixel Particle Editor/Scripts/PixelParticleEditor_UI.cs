@@ -19,6 +19,7 @@ public class PixelParticleEditor_UI : EditorWindow
     Color color2;
 
     Vector2 scroll_palette;
+    Vector2 scroll_palette2;
     Vector2 scroll_camera1;
     Vector2 scroll_camera2;
     Vector2 scroll_layers;
@@ -28,25 +29,31 @@ public class PixelParticleEditor_UI : EditorWindow
 
     OPTIONS current_option = OPTIONS.PARTICLES;
 
-    bool layer1;
-    bool layer2;
+    //bool layer1;
+    //bool layer2;
 
     public Camera camera;
     public ParticleSystem particle_prefab;
-    List<ParticleSystem> particles;
-    List<Material> materials;
+    public GameObject preset_prefab_0;
+    public GameObject preset_prefab_1;
+    public GameObject preset_prefab_2;
+
+    List<ParticleSystem> particles = new List<ParticleSystem>();
+    List<Material> materials = new List<Material>();
 
     RenderTexture renderTexture;
     RenderTexture renderTexture2;
 
-    Texture2D texture_test;
-    float slider_test = 0.0f;
+    //Texture2D texture_test;
+    //float slider_test = 0.0f;
 
     int pixelation = 100;
 
     ParticleSystem selected_particle;
 
     GameObject import_object = null;
+    GameObject import_preset = null;
+    int selected_preset = 0;
 
     float render_time = 5.0f;
     int render_frames = 8;
@@ -58,12 +65,6 @@ public class PixelParticleEditor_UI : EditorWindow
     string export_name = "Pixel Particle";
 
     [MenuItem("Window/Pixel Particle Editor")]
-    /*
-    public static void ShowWindow()
-    {
-        GetWindow<PixelParticleEditor_UI>("Pixel Particle Editor");
-    }
-    */
 
     static void Init()
     {
@@ -77,6 +78,9 @@ public class PixelParticleEditor_UI : EditorWindow
 
     public void Awake()
     {
+        if (EditorApplication.isPlayingOrWillChangePlaymode)
+            return;
+
         //Pixel Render Texture
         renderTexture = new RenderTexture((int)pixelation,
             (int)pixelation,
@@ -89,8 +93,6 @@ public class PixelParticleEditor_UI : EditorWindow
             (int)RenderTextureFormat.ARGB32);
 
         //Particle Init
-        particles = new List<ParticleSystem>();
-        materials = new List<Material>();
         CreateParticle();
 
         //Camera Init
@@ -103,12 +105,15 @@ public class PixelParticleEditor_UI : EditorWindow
 
     public void OnEnable()
     {
+        if (EditorApplication.isPlayingOrWillChangePlaymode)
+            return;
+
         SelectParticle(particles[0]);
     }
 
     public void OnDestroy()
     {
-        if (particles[0])
+        if (particles.Count > 0)
             DestroyImmediate(particles[0].gameObject);
 
         particles.Clear();
@@ -121,7 +126,7 @@ public class PixelParticleEditor_UI : EditorWindow
 
     public void Update()
     {
-        if (!camera || !particles[0])
+        if (!camera || !particles[0] || EditorApplication.isPlayingOrWillChangePlaymode)
             Close();
 
         if (camera != null)
@@ -175,9 +180,17 @@ public class PixelParticleEditor_UI : EditorWindow
         EditorGUILayout.BeginHorizontal();
 
         //Palette Column
-        scroll_palette = EditorGUILayout.BeginScrollView(scroll_palette, GUILayout.Width(175), GUILayout.Height(500));
+        EditorGUILayout.BeginVertical();
+
+        scroll_palette = EditorGUILayout.BeginScrollView(scroll_palette, GUILayout.Width(175), GUILayout.Height(450));
         DrawPaletteColumn();
         EditorGUILayout.EndScrollView();
+
+        scroll_palette2 = EditorGUILayout.BeginScrollView(scroll_palette2, GUILayout.Width(175), GUILayout.Height(250));
+        DrawPaletteColumn2();
+        EditorGUILayout.EndScrollView();
+
+        EditorGUILayout.EndVertical();
 
 
         EditorGUILayout.BeginVertical();
@@ -281,7 +294,57 @@ public class PixelParticleEditor_UI : EditorWindow
         GUILayout.EndVertical();
     }
 
-    void DrawOptions()
+    void DrawPaletteColumn2()
+    {
+        GUILayout.BeginVertical();
+        GUILayout.Label("Custom Palette", EditorStyles.boldLabel);
+
+        Material palette_material = camera.GetComponent<CameraPalette>().palette_material;
+
+        GUILayout.BeginHorizontal();
+
+        if (GUILayout.Button("Enable", GUILayout.Width(50), GUILayout.Height(20)))
+        {
+            camera.GetComponent<CameraPalette>().enabled = !camera.GetComponent<CameraPalette>().enabled;
+        }
+
+        if (GUILayout.Button("Reset", GUILayout.Width(50), GUILayout.Height(20)))
+        {
+            Color lightest = new Color(0.607843f, 0.7372549f, 0.0588235f);
+            Color light = new Color(0.545098f, 0.6745098f, 0.0588235f);
+            Color dark = new Color(0.188235f, 0.38431f, 0.188235f);
+            Color darkest = new Color(0.0588235f, 0.21961f, 0.0588235f);
+
+            palette_material.SetColor("_Ligtest", lightest);
+            palette_material.SetColor("_Ligt", light);
+            palette_material.SetColor("_Dark", dark);
+            palette_material.SetColor("_Darkest", darkest);
+        }
+
+        GUILayout.EndHorizontal();
+
+        EditorGUILayout.Space();
+
+        Color c_lightest = palette_material.GetColor("_Ligtest");
+        c_lightest = EditorGUILayout.ColorField(c_lightest);
+        palette_material.SetColor("_Ligtest", c_lightest);
+
+        Color c_light = palette_material.GetColor("_Ligt");
+        c_light = EditorGUILayout.ColorField(c_light);
+        palette_material.SetColor("_Ligt", c_light);
+
+        Color c_dark = palette_material.GetColor("_Dark");
+        c_dark = EditorGUILayout.ColorField(c_dark);
+        palette_material.SetColor("_Dark", c_dark);
+
+        Color c_darkest = palette_material.GetColor("_Darkest");
+        c_darkest = EditorGUILayout.ColorField(c_darkest);
+        palette_material.SetColor("_Darkest", c_darkest);
+
+        GUILayout.EndVertical();
+    }
+
+        void DrawOptions()
     {
         GUILayout.Label("Functions", EditorStyles.boldLabel);
         GUILayout.BeginVertical();
@@ -399,16 +462,34 @@ public class PixelParticleEditor_UI : EditorWindow
     void DrawPropertiesTemp()
     {
         GUILayout.BeginHorizontal();
+        GUILayout.BeginVertical(GUILayout.Width(30));
+        GUILayout.Space(30);
+        if (GUILayout.Button("<", GUILayout.Width(30), GUILayout.Height(30)))
+        {
+            camera.transform.Translate(1, 0, 0);
+        }
+        GUILayout.EndVertical();
+
+        GUILayout.BeginVertical(GUILayout.Width(30));
+        if (GUILayout.Button("^", GUILayout.Width(30), GUILayout.Height(30)))
+        {
+            camera.transform.Translate(0, -1, 0);
+        }
+
+        GUILayout.Space(30);
+
+        if (GUILayout.Button("v", GUILayout.Width(30), GUILayout.Height(30)))
+        {
+            camera.transform.Translate(0, 1, 0);
+        }
+        GUILayout.EndVertical();
 
         GUILayout.BeginVertical();
-        GUILayout.Label("Texture Test", EditorStyles.label);
-        texture_test = (Texture2D)EditorGUILayout.ObjectField(texture_test, typeof(Texture2D), false);
-
-        GUILayout.Label("CheckBox Test", EditorStyles.label);
-        layer2 = GUILayout.Toggle(layer2, "");
-
-        GUILayout.Label("Slider Test", EditorStyles.label);
-        slider_test = GUILayout.HorizontalSlider(slider_test, 0, 100);
+        GUILayout.Space(30);
+        if (GUILayout.Button(">", GUILayout.Width(30), GUILayout.Height(30)))
+        {
+            camera.transform.Translate(-1, 0, 0);
+        }
         GUILayout.EndVertical();
 
         GUILayout.EndHorizontal();
@@ -651,15 +732,13 @@ public class PixelParticleEditor_UI : EditorWindow
 
     void DrawPropertiesImport()
     {
-        GUILayout.BeginVertical("Box");
-        GUILayout.BeginVertical();
-        import_object = (GameObject)EditorGUILayout.ObjectField(import_object, typeof(GameObject), true);
-        GUILayout.EndVertical();
+        GUILayout.BeginHorizontal();
 
-        GUILayout.BeginVertical();
-        if (GUILayout.Button("Import\n GameObject", GUILayout.Width(90), GUILayout.Height(40)))
+        GUILayout.BeginVertical("Box");
+
+        if (GUILayout.Button("Import\nPreset", GUILayout.Width(90), GUILayout.Height(40)))
         {
-            if(import_object != null && import_object.GetComponent<ParticleSystem>())
+            if(import_preset != null && import_preset.GetComponent<ParticleSystem>())
             {
                 if (EditorUtility.DisplayDialog("Warning", "Do you want to overwrite the current Particle?", "Yes", "No"))
                 {
@@ -667,7 +746,9 @@ public class PixelParticleEditor_UI : EditorWindow
                     particles.Clear();
                     materials.Clear();
 
-                    CreateCustomParticle(import_object);
+                    CreateCustomParticle(import_preset);
+
+                    export_name = import_preset.name;
                 }
             }
 
@@ -677,9 +758,60 @@ public class PixelParticleEditor_UI : EditorWindow
             }
 
         }
-        GUILayout.EndVertical();
+        GUILayout.Space(20.0f);
+        string[] preset_options = new string[]
+        {
+            "Fire",
+            "Energy Ball",
+            "Glitch"
+        };
+        selected_preset = EditorGUILayout.Popup(selected_preset, preset_options);
+
+        switch (selected_preset)
+        {
+            case 0:
+                import_preset = preset_prefab_0;
+                break;
+            case 1:
+                import_preset = preset_prefab_1;
+                break;
+            case 2:
+                import_preset = preset_prefab_2;
+                break;
+        }
+
         GUILayout.EndVertical();
 
+        GUILayout.BeginVertical("Box");
+
+        if (GUILayout.Button("Import\nGame Object", GUILayout.Width(90), GUILayout.Height(40)))
+        {
+            if (import_object != null && import_object.GetComponent<ParticleSystem>())
+            {
+                if (EditorUtility.DisplayDialog("Warning", "Do you want to overwrite the current Particle?", "Yes", "No"))
+                {
+                    DestroyImmediate(particles[0].gameObject);
+                    particles.Clear();
+                    materials.Clear();
+
+                    CreateCustomParticle(import_object);
+
+                    export_name = import_object.name;
+                }
+            }
+
+            else
+            {
+                EditorUtility.DisplayDialog("Error", "Selected GameObject does not contain a Particle System.", "Accept");
+            }
+
+        }
+        GUILayout.Space(20.0f);
+        import_object = (GameObject)EditorGUILayout.ObjectField("Import Object:", import_object, typeof(GameObject), false);
+
+        GUILayout.EndVertical();
+
+        GUILayout.EndHorizontal();
     }
 
     void DrawPropertiesExport()
@@ -687,21 +819,21 @@ public class PixelParticleEditor_UI : EditorWindow
         GUILayout.BeginHorizontal();
 
         GUILayout.BeginVertical("Box");
-        if (GUILayout.Button("Export\n Sprite Sheet", GUILayout.Width(90), GUILayout.Height(40)))
+        if (GUILayout.Button("Export\nSprite Sheet", GUILayout.Width(90), GUILayout.Height(40)))
         {
             render_active = true;
             wait_one_frame = false;
             current_frame = 0;
         }
         GUILayout.Space(20.0f);
-        render_time = EditorGUILayout.FloatField("Render Time:", render_time);
-        render_frames = EditorGUILayout.IntField("Frames to Render:", render_frames);
-        render_path = EditorGUILayout.TextField("File Name:", render_path);
+        render_time = EditorGUILayout.FloatField("Render Time:", render_time, GUILayout.Width(361));
+        render_frames = EditorGUILayout.IntField("Frames to Render:", render_frames, GUILayout.Width(361));
+        render_path = EditorGUILayout.TextField("File Name:", render_path, GUILayout.Width(361));
 
         GUILayout.EndVertical();
 
         GUILayout.BeginVertical("Box");
-        if (GUILayout.Button("Export\n Game Object", GUILayout.Width(90), GUILayout.Height(40)))
+        if (GUILayout.Button("Export\nGame Object", GUILayout.Width(90), GUILayout.Height(40)))
         {
             SaveGameObject(export_name);
         }
@@ -722,12 +854,17 @@ public class PixelParticleEditor_UI : EditorWindow
                 AssetDatabase.CreateFolder("Assets", "Particle Export");
             }
 
+            if (!AssetDatabase.IsValidFolder("Assets/Particle Export/Game Objects"))
+            {
+                AssetDatabase.CreateFolder("Assets/Particle Export", "Game Objects");
+            }
+
             List<Material> export_materials = new List<Material>();
 
             foreach (Material material in materials)
             {
                 export_materials.Add(new Material(material));
-                AssetDatabase.CreateAsset(export_materials[materials.IndexOf(material)], "Assets/Particle Export/" + name + "_Material" + materials.IndexOf(material) + ".mat");
+                AssetDatabase.CreateAsset(export_materials[materials.IndexOf(material)], "Assets/Particle Export/Game Objects/" + name + "_Material" + materials.IndexOf(material) + ".mat");
             }
 
             GameObject to_export = Instantiate(particles[0].gameObject, new Vector3(0, -90, 0), Quaternion.identity);
@@ -742,7 +879,7 @@ public class PixelParticleEditor_UI : EditorWindow
 
             export_materials.Clear();
 
-            PrefabUtility.SaveAsPrefabAsset(to_export, "Assets/Particle Export/" + name + ".prefab");
+            PrefabUtility.SaveAsPrefabAsset(to_export, "Assets/Particle Export/Game Objects/" + name + ".prefab");
 
             DestroyImmediate(to_export);
         }
@@ -779,12 +916,17 @@ public class PixelParticleEditor_UI : EditorWindow
 
         byte[] bytes = texture.EncodeToPNG();
 
-        if (!AssetDatabase.IsValidFolder("Assets/Particle Render"))
+        if (!AssetDatabase.IsValidFolder("Assets/Particle Export"))
         {
-            AssetDatabase.CreateFolder("Assets", "Particle Render");
+            AssetDatabase.CreateFolder("Assets", "Particle Export");
         }
 
-        string path = Application.dataPath + "/Particle Render/"+ render_path + ".png";
+        if (!AssetDatabase.IsValidFolder("Assets/Particle Export/Sprite Sheets"))
+        {
+            AssetDatabase.CreateFolder("Assets/Particle Export", "Sprite Sheets");
+        }
+
+        string path = Application.dataPath + "/Particle Export/Sprite Sheets/" + render_path + ".png";
         System.IO.File.WriteAllBytes(path, bytes);
 
         AssetDatabase.Refresh();

@@ -10,10 +10,10 @@ GameObject:
   m_Component:
   - component: {fileID: 1914956515330042259}
   - component: {fileID: 1914956515330042256}
-  - component: {fileID: 1914956515330042257}
+  - component: {fileID: 5806049590422600971}
   m_Layer: 0
   m_Name: UI Camera
-  m_TagString: MainCamera
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -66,7 +66,7 @@ Camera:
     m_Bits: 4294967295
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
-  m_TargetDisplay: 1
+  m_TargetDisplay: 7
   m_TargetEye: 3
   m_HDR: 1
   m_AllowMSAA: 1
@@ -75,11 +75,16 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!81 &1914956515330042257
-AudioListener:
+--- !u!114 &5806049590422600971
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1914956515330042262}
-  m_Enabled: 1
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 091e599fbbea3274ea40b8e95d53a90b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  palette_material: {fileID: 2100000, guid: e2c77016510e1ae488f647febed94057, type: 2}
