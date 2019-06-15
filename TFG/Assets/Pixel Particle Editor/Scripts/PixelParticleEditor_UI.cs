@@ -40,12 +40,15 @@ public class PixelParticleEditor_UI : EditorWindow
 
     List<ParticleSystem> particles = new List<ParticleSystem>();
     List<Material> materials = new List<Material>();
+    List<Material> palettes = new List<Material>();
 
     RenderTexture renderTexture;
     RenderTexture renderTexture2;
 
     //Texture2D texture_test;
     //float slider_test = 0.0f;
+
+    int palette_list = 0;
 
     int pixelation = 100;
 
@@ -98,6 +101,18 @@ public class PixelParticleEditor_UI : EditorWindow
         //Camera Init
         camera = Instantiate(camera, new Vector3(-10000,0,0), Quaternion.identity);
         camera.gameObject.hideFlags = HideFlags.HideInHierarchy;
+
+        camera.GetComponent<CameraPalette>().palette_material = new Material(camera.GetComponent<CameraPalette>().palette_material);
+
+        //Palette Init
+        string[] palette_guids = AssetDatabase.FindAssets("t:material", new[] { "Assets/Pixel Particle Editor/Materials/Palettes" });
+
+        foreach (string guid in palette_guids)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            Material to_add = AssetDatabase.LoadAssetAtPath<Material>(path);
+            palettes.Add(to_add);
+        }
 
         //Rendered Texture List Init
         rendered_textures = new List<Texture2D>();
@@ -297,23 +312,49 @@ public class PixelParticleEditor_UI : EditorWindow
     void DrawPaletteColumn2()
     {
         GUILayout.BeginVertical();
+
         GUILayout.Label("Custom Palette", EditorStyles.boldLabel);
 
         Material palette_material = camera.GetComponent<CameraPalette>().palette_material;
 
+        List<string> palette_options = new List<string>();
+
+        foreach (Material palette in palettes)
+        {
+            palette_options.Add(palette.name);
+        }
+        
+        palette_list = EditorGUILayout.Popup(palette_list, palette_options.ToArray());
+
         GUILayout.BeginHorizontal();
 
-        if (GUILayout.Button("Enable", GUILayout.Width(50), GUILayout.Height(20)))
+        string button_text;
+        if (!camera.GetComponent<CameraPalette>().enabled)
+            button_text = "Enable";
+        else
+            button_text = "Disable";
+
+        if (GUILayout.Button(button_text, GUILayout.Width(50), GUILayout.Height(20)))
         {
             camera.GetComponent<CameraPalette>().enabled = !camera.GetComponent<CameraPalette>().enabled;
         }
 
-        if (GUILayout.Button("Reset", GUILayout.Width(50), GUILayout.Height(20)))
+        if (GUILayout.Button("Save", GUILayout.Width(50), GUILayout.Height(20)))
         {
-            Color lightest = new Color(0.607843f, 0.7372549f, 0.0588235f);
-            Color light = new Color(0.545098f, 0.6745098f, 0.0588235f);
-            Color dark = new Color(0.188235f, 0.38431f, 0.188235f);
-            Color darkest = new Color(0.0588235f, 0.21961f, 0.0588235f);
+            Rect rect = new Rect(8, 0, 0, 70);
+            PaletteSaveWindow popup = new PaletteSaveWindow();
+            popup.SetPalette(palette_material);
+            popup.SetList(palettes);
+            PopupWindow.Show(rect, popup);
+        }
+
+        if (GUILayout.Button("Load", GUILayout.Width(50), GUILayout.Height(20)))
+        {
+
+            Color lightest = palettes[palette_list].GetColor("_Ligtest");
+            Color light = palettes[palette_list].GetColor("_Ligt");
+            Color dark = palettes[palette_list].GetColor("_Dark");
+            Color darkest = palettes[palette_list].GetColor("_Darkest");
 
             palette_material.SetColor("_Ligtest", lightest);
             palette_material.SetColor("_Ligt", light);
@@ -324,18 +365,25 @@ public class PixelParticleEditor_UI : EditorWindow
         GUILayout.EndHorizontal();
 
         EditorGUILayout.Space();
+        EditorGUILayout.Space();
 
         Color c_lightest = palette_material.GetColor("_Ligtest");
         c_lightest = EditorGUILayout.ColorField(c_lightest);
         palette_material.SetColor("_Ligtest", c_lightest);
 
+        EditorGUILayout.Space();
+
         Color c_light = palette_material.GetColor("_Ligt");
         c_light = EditorGUILayout.ColorField(c_light);
         palette_material.SetColor("_Ligt", c_light);
 
+        EditorGUILayout.Space();
+
         Color c_dark = palette_material.GetColor("_Dark");
         c_dark = EditorGUILayout.ColorField(c_dark);
         palette_material.SetColor("_Dark", c_dark);
+
+        EditorGUILayout.Space();
 
         Color c_darkest = palette_material.GetColor("_Darkest");
         c_darkest = EditorGUILayout.ColorField(c_darkest);

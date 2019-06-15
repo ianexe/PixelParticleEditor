@@ -1,4 +1,4 @@
-﻿Shader "Gameboy"
+﻿Shader "PixelParticle/Pixel Palette"
 {
     Properties
     {
