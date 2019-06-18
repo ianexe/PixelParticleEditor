@@ -55,9 +55,9 @@
 		float4 originalColor = tex2D(_MainTex, i.uv);
 
 		float luma = dot(originalColor.rgb, float3(0.2126, 0.7152, 0.0722));
-		float posterized = floor(luma * 4) / (4 - 1);
+		float posterized = floor(luma * 8) / (8 - 1);
 
-		float lumaTimesThree = posterized * 3.0;
+		float lumaTimesThree = posterized * 7.0;
 
 		// Dither pattern sample
 		float2 dither_uv = i.uv * _DitherTex_TexelSize;
@@ -67,21 +67,30 @@
 		float darkest = saturate(lumaTimesThree);
 		float4 color = lerp(_Darkest, _Dark, darkest);
 
+		float darkest2 = saturate(lumaTimesThree - 1.0);
+		color = lerp(color, _Dark, darkest2);
+
 		//---------------------------
 		float4 dither_color = (luma*3.0) < dither ? _Darkest : color;
 		color = lerp(color, dither_color, darkest);
 		//---------------------------
 
-		float light = saturate(lumaTimesThree - 1.0);
+		float light = saturate(lumaTimesThree - 2.0);
 		color = lerp(color, _Ligt, light);
+
+		float light2 = saturate(lumaTimesThree - 3.0);
+		color = lerp(color, _Ligt, light2);
 
 		//---------------------------
 		float4 dither_color2 = (luma*3.0-1.0) < dither ? _Dark : color;
 		color = lerp(color, dither_color2, light);
 		//---------------------------
 
-		float lightest = saturate(lumaTimesThree - 2.0);
+		float lightest = saturate(lumaTimesThree - 4.0);
 		color = lerp(color, _Ligtest, lightest);
+
+		float lightest2 = saturate(lumaTimesThree - 5.0);
+		color = lerp(color, _Ligtest, lightest2);
 
 		//---------------------------
 		float4 dither_color3 = (luma*3.0-2.0) < dither ? _Ligt : color;
