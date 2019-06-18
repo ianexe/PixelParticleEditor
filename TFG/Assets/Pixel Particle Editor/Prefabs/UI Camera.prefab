@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 1914956515330042259}
   - component: {fileID: 1914956515330042256}
   - component: {fileID: 5806049590422600971}
+  - component: {fileID: 7769141430956669222}
   m_Layer: 0
   m_Name: UI Camera
   m_TagString: Untagged
@@ -88,3 +89,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   palette_material: {fileID: 2100000, guid: e2c77016510e1ae488f647febed94057, type: 2}
+--- !u!114 &7769141430956669222
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1914956515330042262}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8252f58a59c70f44783f16e7ba97af60, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  blur_material: {fileID: 2100000, guid: 5aa761b641d7972498e9847f6d3e9c18, type: 2}

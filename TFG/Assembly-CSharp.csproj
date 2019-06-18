@@ -62,7 +62,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\AntialiasingScript.cs" />
     <Compile Include="Assets\GameBoy.cs" />
+    <Compile Include="Assets\Pixel Particle Editor\Scripts\CameraBlur.cs" />
     <Compile Include="Assets\Pixel Particle Editor\Scripts\CameraPalette.cs" />
     <Compile Include="Assets\Pixel Particle Editor\Scripts\PaletteSaveWindow.cs" />
     <Compile Include="Assets\Pixel Particle Editor\Scripts\PixelParticleEditor_UI.cs" />
@@ -72,6 +74,7 @@
     <None Include="Assets\Pixel Particle Editor\Scripts\PixelShaderAdditive.shader" />
     <None Include="Assets\Pixel Particle Editor\Scripts\PaletteShader.shader" />
     <None Include="Assets\Pixel Particle Editor\Scripts\PixelShaderSubtractive.shader" />
+    <None Include="Assets\Pixel Particle Editor\Scripts\AntialiasingShader.shader" />
     <Reference Include="Unity.Timeline.Editor">
       <HintPath>C:/Users/itrue/Documents/GitHub/PixelParticleEditor/TFG/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>
     </Reference>

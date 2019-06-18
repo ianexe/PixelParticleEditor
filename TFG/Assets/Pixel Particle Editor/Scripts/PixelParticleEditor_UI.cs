@@ -51,6 +51,9 @@ public class PixelParticleEditor_UI : EditorWindow
     int palette_list = 0;
 
     int pixelation = 100;
+    int selected_dithering = 0;
+    List<Texture> dithering_textures;
+    float antialiasing_value = 0.0f;
 
     ParticleSystem selected_particle;
 
@@ -116,6 +119,16 @@ public class PixelParticleEditor_UI : EditorWindow
 
         //Rendered Texture List Init
         rendered_textures = new List<Texture2D>();
+
+        //Dithering Texture Array Init
+        dithering_textures = new List<Texture>();
+        string[] texture_guids = (AssetDatabase.FindAssets("t:texture", new[] { "Assets/Pixel Particle Editor/Materials/Palettes" }));
+        foreach (string guid in texture_guids)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            Texture to_add = AssetDatabase.LoadAssetAtPath<Texture>(path);
+            dithering_textures.Add(to_add);
+        }
     }
 
     public void OnEnable()
@@ -337,6 +350,8 @@ public class PixelParticleEditor_UI : EditorWindow
         if (GUILayout.Button(button_text, GUILayout.Width(50), GUILayout.Height(20)))
         {
             camera.GetComponent<CameraPalette>().enabled = !camera.GetComponent<CameraPalette>().enabled;
+            if (camera.GetComponent<CameraBlur>().enabled)
+                camera.GetComponent<CameraBlur>().enabled = false;
         }
 
         if (GUILayout.Button("Save", GUILayout.Width(50), GUILayout.Height(20)))
@@ -766,6 +781,8 @@ public class PixelParticleEditor_UI : EditorWindow
 
     void DrawPropertiesFX()
     {
+        GUILayout.BeginHorizontal();
+        GUILayout.BeginVertical();
         GUILayout.Label("Pixelation", EditorStyles.label);
         int prev_pixelation = pixelation;
         pixelation = EditorGUILayout.IntSlider(pixelation, 256, 8);
@@ -775,17 +792,22 @@ public class PixelParticleEditor_UI : EditorWindow
             renderTexture = new RenderTexture(pixelation, pixelation, (int)RenderTextureFormat.ARGB32);
             renderTexture.filterMode = FilterMode.Point;
         }
+        GUILayout.EndVertical();
 
+        GUILayout.Space(30);
+
+        GUILayout.BeginVertical();
         Material palette_material = camera.GetComponent<CameraPalette>().palette_material;
 
-        GUILayout.Label("Dithering", EditorStyles.label);
+        //GUILayout.Label("Dithering", EditorStyles.label);
         bool dithering_button = palette_material.shader == Shader.Find("PixelParticle/Pixel Palette 2");
-        dithering_button = GUILayout.Toggle(dithering_button, "");
+        dithering_button = GUILayout.Toggle(dithering_button,  " Dithering");
         if (dithering_button != (palette_material.shader == Shader.Find("PixelParticle/Pixel Palette 2")))
         {
             if (dithering_button == true)
             {
                 palette_material.shader = Shader.Find("PixelParticle/Pixel Palette 2");
+                palette_material.SetTexture("_DitherTex", dithering_textures[selected_dithering]);
             }
             else
             {
@@ -793,7 +815,48 @@ public class PixelParticleEditor_UI : EditorWindow
             }
         }
 
+        int prev_dithering = selected_dithering;
+        string[] dither_options = new string[]
+        {
+            "2x2",
+            "8x8"
+        };
+        selected_dithering = EditorGUILayout.Popup(selected_dithering, dither_options);
+        if (prev_dithering != selected_dithering && dithering_button)
+        {
+            palette_material.SetTexture("_DitherTex", dithering_textures[selected_dithering]);
+        }
 
+        Rect rect = new Rect(330, 80, 70, 70);
+        GUI.DrawTexture(rect, dithering_textures[selected_dithering]);
+
+        GUILayout.EndVertical();
+
+        GUILayout.Space(30);
+
+        GUILayout.BeginVertical();
+
+        Material antialiasing_material = camera.GetComponent<CameraBlur>().blur_material;
+
+        bool antialiasing_button = camera.GetComponent<CameraBlur>().enabled == true;
+        antialiasing_button = GUILayout.Toggle(antialiasing_button, " Antialiasing");
+        if (antialiasing_button != (camera.GetComponent<CameraBlur>().enabled == true))
+        {
+            camera.GetComponent<CameraBlur>().enabled = antialiasing_button;
+        }
+
+        if (antialiasing_button && camera.GetComponent<CameraPalette>().enabled)
+            camera.GetComponent<CameraPalette>().enabled = false;
+
+        antialiasing_value = EditorGUILayout.Slider(antialiasing_value, 0.0f, 0.015f);
+        if (antialiasing_button)
+        {
+            antialiasing_material.SetFloat("_BlurSize", antialiasing_value);
+            antialiasing_material.SetFloat("_Samples", 100.0f);
+        }
+        
+        GUILayout.EndVertical();
+        GUILayout.EndHorizontal();
     }
 
     void DrawPropertiesImport()
