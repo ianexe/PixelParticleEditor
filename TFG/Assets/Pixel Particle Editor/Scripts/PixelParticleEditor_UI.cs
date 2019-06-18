@@ -776,6 +776,24 @@ public class PixelParticleEditor_UI : EditorWindow
             renderTexture.filterMode = FilterMode.Point;
         }
 
+        Material palette_material = camera.GetComponent<CameraPalette>().palette_material;
+
+        GUILayout.Label("Dithering", EditorStyles.label);
+        bool dithering_button = palette_material.shader == Shader.Find("PixelParticle/Pixel Palette 2");
+        dithering_button = GUILayout.Toggle(dithering_button, "");
+        if (dithering_button != (palette_material.shader == Shader.Find("PixelParticle/Pixel Palette 2")))
+        {
+            if (dithering_button == true)
+            {
+                palette_material.shader = Shader.Find("PixelParticle/Pixel Palette 2");
+            }
+            else
+            {
+                palette_material.shader = Shader.Find("PixelParticle/Pixel Palette");
+            }
+        }
+
+
     }
 
     void DrawPropertiesImport()
