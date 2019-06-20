@@ -6,6 +6,7 @@ using System.Collections.Generic;
 public enum OPTIONS
 {
     PARTICLES,
+    RENDER,
     FX,
     CAMERA,
     IMPORT,
@@ -70,7 +71,7 @@ public class PixelParticleEditor_UI : EditorWindow
     string render_path = "Export";
     string export_name = "Pixel Particle";
 
-    [MenuItem("Window/Pixel Particle Editor")]
+    [MenuItem("Tools/Pixel Particle Editor")]
 
     static void Init()
     {
@@ -413,6 +414,7 @@ public class PixelParticleEditor_UI : EditorWindow
         GUILayout.BeginVertical();
 
         DrawOptionButton(OPTIONS.PARTICLES, "Particles");
+        DrawOptionButton(OPTIONS.RENDER, "Render");
         DrawOptionButton(OPTIONS.FX, "FX");
         DrawOptionButton(OPTIONS.CAMERA, "Camera");
         DrawOptionButton(OPTIONS.IMPORT, "Import");
@@ -506,11 +508,14 @@ public class PixelParticleEditor_UI : EditorWindow
             case OPTIONS.PARTICLES:
                 DrawPropertiesParticle();
                 break;
+            case OPTIONS.RENDER:
+                DrawPropertiesRender();
+                break;
             case OPTIONS.FX:
                 DrawPropertiesFX();
                 break;
             case OPTIONS.CAMERA:
-                DrawPropertiesTemp();
+                DrawPropertiesCamera();
                 break;
             case OPTIONS.IMPORT:
                 DrawPropertiesImport();
@@ -522,8 +527,10 @@ public class PixelParticleEditor_UI : EditorWindow
         
     }
 
-    void DrawPropertiesTemp()
+    void DrawPropertiesCamera()
     {
+        GUILayout.Label("Move Camera", EditorStyles.label);
+        EditorGUILayout.Space();
         GUILayout.BeginHorizontal();
         GUILayout.BeginVertical(GUILayout.Width(30));
         GUILayout.Space(30);
@@ -553,6 +560,114 @@ public class PixelParticleEditor_UI : EditorWindow
         {
             camera.transform.Translate(-1, 0, 0);
         }
+        GUILayout.EndVertical();
+
+        GUILayout.EndHorizontal();
+    }
+
+    void DrawPropertiesRender()
+    {
+        GUILayout.BeginHorizontal();
+
+        GUILayout.BeginVertical();
+
+        ParticleSystemRenderer particle_renderer;
+        particle_renderer = selected_particle.GetComponent<ParticleSystemRenderer>();
+        var main = selected_particle.main;
+
+        var particle_gradient = selected_particle.colorOverLifetime;
+        bool particle_button = particle_gradient.enabled;
+        particle_button = GUILayout.Toggle(particle_button, " Color Gradient");
+        if (particle_button != particle_gradient.enabled)
+            particle_gradient.enabled = particle_button;
+
+        Gradient gradient = particle_gradient.color.gradient;
+        gradient = EditorGUILayout.GradientField(gradient);
+        particle_gradient.color = gradient;
+
+        GUILayout.EndVertical();
+
+        GUILayout.BeginVertical();
+
+        GUILayout.Label("Render Mode", EditorStyles.label);
+
+        GUILayout.Space(2);
+
+        string[] rendermode_popup = new string[]
+        {
+            "Billboard",
+            "Stretched Billboard"
+        };
+
+        int rendermode;
+        if (particle_renderer.renderMode == ParticleSystemRenderMode.Billboard)
+            rendermode = 0;
+        else
+            rendermode = 1;
+
+        rendermode = EditorGUILayout.Popup(rendermode, rendermode_popup);
+        
+
+        switch (rendermode)
+        {
+            case 0:
+                particle_renderer.renderMode = ParticleSystemRenderMode.Billboard;
+                break;
+
+            case 1:
+                particle_renderer.renderMode = ParticleSystemRenderMode.Stretch;
+                break;
+        }
+
+        if (rendermode == 1)
+        {
+            GUILayout.Space(2);
+
+            GUILayout.Label("Length Scale", EditorStyles.label);
+            float length = particle_renderer.lengthScale;
+            length = EditorGUILayout.Slider(length, -10.0f, 10.0f);
+            particle_renderer.lengthScale = length;
+        }
+    
+        GUILayout.EndVertical();
+
+        GUILayout.BeginVertical();
+
+        GUILayout.Label("Sort Mode", EditorStyles.label);
+
+        GUILayout.Space(2);
+
+        string[] sortmode_popup = new string[]
+        {
+            "None",
+            "Youngest In Front",
+            "Oldest In Front"
+        };
+
+        int sortmode;
+        if (particle_renderer.sortMode == ParticleSystemSortMode.None)
+            sortmode = 0;
+        else if (particle_renderer.sortMode == ParticleSystemSortMode.YoungestInFront)
+            sortmode = 1;
+        else
+            sortmode = 2;
+
+        sortmode = EditorGUILayout.Popup(sortmode, sortmode_popup);
+
+        switch (sortmode)
+        {
+            case 0:
+                particle_renderer.sortMode = ParticleSystemSortMode.None;
+                break;
+
+            case 1:
+                particle_renderer.sortMode = ParticleSystemSortMode.YoungestInFront;
+                break;
+            case 2:
+                particle_renderer.sortMode = ParticleSystemSortMode.OldestInFront;
+                break;
+        }
+
         GUILayout.EndVertical();
 
         GUILayout.EndHorizontal();
@@ -819,6 +934,7 @@ public class PixelParticleEditor_UI : EditorWindow
         string[] dither_options = new string[]
         {
             "2x2",
+            "4x4",
             "8x8"
         };
         selected_dithering = EditorGUILayout.Popup(selected_dithering, dither_options);
