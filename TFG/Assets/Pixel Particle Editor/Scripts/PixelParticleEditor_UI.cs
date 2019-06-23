@@ -721,17 +721,17 @@ public class PixelParticleEditor_UI : EditorWindow
 
         GUILayout.Label("Particle Lifetime", EditorStyles.label);
         float particle_time = main.startLifetime.constant;
-        particle_time = GUILayout.HorizontalSlider(particle_time, 0.0f, 20.0f);
+        particle_time = EditorGUILayout.Slider(particle_time, 0.0f, 20.0f);
         main.startLifetime = particle_time;
 
         GUILayout.Label("Particle Speed", EditorStyles.label);
         float particle_speed = main.startSpeed.constant;
-        particle_speed = GUILayout.HorizontalSlider(particle_speed, 0.0f, 20.0f);
+        particle_speed = EditorGUILayout.Slider(particle_speed, 0.0f, 20.0f);
         main.startSpeed = particle_speed;
 
         GUILayout.Label("Particle Size", EditorStyles.label);
         float particle_size = main.startSize.constant;
-        particle_size = GUILayout.HorizontalSlider(particle_size, 0.0f, 20.0f);
+        particle_size = EditorGUILayout.Slider(particle_size, 0.0f, 20.0f);
         main.startSize = particle_size;
 
         GUILayout.Label("Size Increment", EditorStyles.label);
